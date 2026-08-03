@@ -1,52 +1,33 @@
-import { ArrowUpRight, Rocket, Building2 } from "lucide-react";
-import type { Lead, Campaign } from "@/lib/types";
+import { Rocket, Building2 } from "lucide-react";
+import type { DashboardStats } from "@/lib/types";
 
 interface MetricsInfoProps {
-  leads?: Lead[];
-  campaigns?: Campaign[];
+  stats: DashboardStats | null;
 }
 
-export function MetricsInfo({ leads = [], campaigns = [] }: MetricsInfoProps) {
-  // Metric 1: Total Leads Processed
-  const totalLeads = leads.length > 0 ? leads.length : 12842;
-  const showLeadTrend = leads.length === 0; // Show trend badge only for fallback/mock state
+export function MetricsInfo({ stats }: MetricsInfoProps) {
+  const leadsProcessed = stats?.leads_processed ?? 0;
+  const campaignsLaunched = stats?.campaigns_launched ?? 0;
+  const campaignsActive = stats?.campaigns_active ?? 0;
+  const campaignsCompleted = stats?.campaigns_completed ?? 0;
+  const outreached = stats?.outreached_businesses ?? 0;
 
-  // Metric 2: Campaigns Launched
-  const totalCampaigns = campaigns.length > 0 ? campaigns.length : 12;
-  const activeCampaigns = campaigns.length > 0 
-    ? campaigns.filter(c => c.status === "running").length 
-    : 3;
-  
-  // Calculate completion rate based on real campaign data or fallback to 75%
-  let completionRate = 75;
-  if (campaigns.length > 0) {
-    const totalB = campaigns.reduce((sum, c) => sum + c.total_businesses, 0);
-    const processedB = campaigns.reduce((sum, c) => sum + c.processed_count, 0);
-    completionRate = totalB > 0 ? Math.round((processedB / totalB) * 100) : 0;
-  }
-
-  // Metric 3: Total Outreached Businesses
-  let totalOutreached = 428;
-  if (campaigns.length > 0) {
-    totalOutreached = campaigns.reduce((sum, c) => sum + (c.contacted_count || 0), 0);
-  }
+  // Progress bar = share of launched campaigns that have completed.
+  const completionRate = campaignsLaunched > 0
+    ? Math.round((campaignsCompleted / campaignsLaunched) * 100)
+    : 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-      {/* Metric 1: Total Leads Processed */}
+      {/* Metric 1: Total Leads Processed (businesses checked by the Checker) */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow duration-300">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
           Total Leads Processed
         </p>
         <div className="flex items-baseline justify-between mt-2">
           <span className="text-3xl font-extrabold text-slate-900">
-            {totalLeads.toLocaleString()}
+            {leadsProcessed.toLocaleString()}
           </span>
-          {showLeadTrend && (
-            <span className="inline-flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-              +14.2% <ArrowUpRight className="w-3 h-3 ml-0.5" />
-            </span>
-          )}
         </div>
       </div>
 
@@ -57,15 +38,15 @@ export function MetricsInfo({ leads = [], campaigns = [] }: MetricsInfoProps) {
         </p>
         <div className="flex items-center justify-between mt-2">
           <span className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Rocket className="w-4 h-4 text-indigo-600" /> {totalCampaigns} Launched
+            <Rocket className="w-4 h-4 text-indigo-600" /> {campaignsLaunched} Launched
           </span>
           <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
-            {activeCampaigns} Active
+            {campaignsActive} Active
           </span>
         </div>
         <div className="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
-          <div 
-            className="bg-gradient-to-r from-indigo-600 to-emerald-500 h-full rounded-full transition-all duration-1000 ease-out" 
+          <div
+            className="bg-gradient-to-r from-indigo-600 to-emerald-500 h-full rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${completionRate}%` }}
           />
         </div>
@@ -82,7 +63,7 @@ export function MetricsInfo({ leads = [], campaigns = [] }: MetricsInfoProps) {
           </span>
         </div>
         <div className="mt-2 text-3xl font-extrabold text-slate-900">
-          {totalOutreached.toLocaleString()}{" "}
+          {outreached.toLocaleString()}{" "}
           <span className="text-xs font-normal text-slate-500">businesses contacted</span>
         </div>
       </div>

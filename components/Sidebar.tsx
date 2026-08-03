@@ -18,8 +18,8 @@ import {
 
 const mainNav = [
   { name: "Home", href: "/", icon: Home },
-  { name: "Live Businesses", href: "/live_businesses", icon: Building2 },
-  { name: "All Campaigns/CSVs", href: "/presence_analysis", icon: Globe2 },
+  { name: "All Businesses", href: "/businesses", icon: Building2 },
+  { name: "All Campaigns/CSVs", href: "/campaigns", icon: Globe2 },
 ];
 
 const auditNav = [

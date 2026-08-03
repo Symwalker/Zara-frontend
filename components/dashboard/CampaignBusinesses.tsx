@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Phone, CheckCircle2, Play, Send } from "lucide-react";
+import { Loader2, Phone, CheckCircle2, Send } from "lucide-react";
 import { api } from "@/lib/api";
+import { StartCampaignDialog } from "@/components/dashboard/StartCampaignDialog";
+import { WebsiteFilter, type WebsiteBucket } from "@/components/dashboard/WebsiteFilter";
 import type { BusinessSummary, Campaign } from "@/lib/types";
 
 // Statuses during which the crew is actively working (keep polling).
@@ -24,6 +26,8 @@ export function CampaignBusinesses({ campaignId }: { campaignId: number }) {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [startOpen, setStartOpen] = useState(false);
+  const [websiteFilter, setWebsiteFilter] = useState<WebsiteBucket>("all");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const poll = useCallback(async () => {
@@ -51,10 +55,11 @@ export function CampaignBusinesses({ campaignId }: { campaignId: number }) {
     };
   }, [poll]);
 
-  async function handleStart() {
+  async function confirmStart(scope: "no_website" | "all") {
     setStarting(true);
     try {
-      await api.startCampaign(campaignId);
+      await api.startCampaign(campaignId, scope);
+      setStartOpen(false);
       if (timerRef.current) clearTimeout(timerRef.current);
       poll(); // resume polling through the messaging phase
     } catch (e) {
@@ -70,6 +75,14 @@ export function CampaignBusinesses({ campaignId }: { campaignId: number }) {
   const messaging = status === "messaging";
   const completed = status === "completed";
   const withPhone = businesses.filter((b) => b.phone).length;
+
+  const visibleBusinesses =
+    websiteFilter === "all" ? businesses : businesses.filter((b) => b.website_status === websiteFilter);
+  const websiteCounts = {
+    all: businesses.length,
+    no_website: businesses.filter((b) => b.website_status === "no_website").length,
+    has_website: businesses.filter((b) => b.website_status === "has_website").length,
+  };
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
@@ -97,7 +110,7 @@ export function CampaignBusinesses({ campaignId }: { campaignId: number }) {
 
         {discovered && (
           <button
-            onClick={handleStart}
+            onClick={() => setStartOpen(true)}
             disabled={starting}
             className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-60 text-white font-semibold px-4 py-2 rounded-xl shadow-md shadow-indigo-600/20 flex items-center gap-2 text-sm transition-all"
           >
@@ -112,6 +125,20 @@ export function CampaignBusinesses({ campaignId }: { campaignId: number }) {
             )}
           </button>
         )}
+      </div>
+
+      <StartCampaignDialog
+        open={startOpen}
+        title={campaign?.name}
+        busy={starting}
+        onClose={() => setStartOpen(false)}
+        onConfirm={confirmStart}
+      />
+
+      {/* Filter rows by website status */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <span className="text-xs font-semibold text-slate-500">Filter:</span>
+        <WebsiteFilter value={websiteFilter} onChange={setWebsiteFilter} counts={websiteCounts} />
       </div>
 
       {error && <p className="text-xs text-red-600">API error: {error}</p>}
@@ -129,7 +156,7 @@ export function CampaignBusinesses({ campaignId }: { campaignId: number }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-            {businesses.map((b) => (
+            {visibleBusinesses.map((b) => (
               <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
                 <td className="p-3 font-semibold text-slate-900">{b.name}</td>
                 <td className="p-3 text-slate-500">{b.city}</td>
@@ -153,10 +180,14 @@ export function CampaignBusinesses({ campaignId }: { campaignId: number }) {
                 <td className="p-3 text-slate-500">{b.channel_decision}</td>
               </tr>
             ))}
-            {businesses.length === 0 && (
+            {visibleBusinesses.length === 0 && (
               <tr>
                 <td colSpan={6} className="p-6 text-center text-slate-400">
-                  {discovering ? "Importing & discovering contacts…" : "No businesses."}
+                  {discovering
+                    ? "Importing & discovering contacts…"
+                    : businesses.length === 0
+                      ? "No businesses."
+                      : "No businesses match this filter."}
                 </td>
               </tr>
             )}
