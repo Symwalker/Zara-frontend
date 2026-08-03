@@ -6,19 +6,20 @@ import { usePathname } from "next/navigation";
 import { 
   Zap, 
   Home, 
-  UploadCloud, 
   Building2, 
   Globe2, 
   Mail, 
   Flame, 
   Menu, 
-  X 
+  X,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 const mainNav = [
   { name: "Home", href: "/", icon: Home },
   { name: "Live Businesses", href: "/live_businesses", icon: Building2 },
-  { name: "Presence Analysis", href: "/presence_analysis", icon: Globe2 },
+  { name: "All Campaigns/CSVs", href: "/presence_analysis", icon: Globe2 },
 ];
 
 const auditNav = [
@@ -29,6 +30,21 @@ const auditNav = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Load collapse state from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed");
+    if (saved === "true") {
+      setIsCollapsed(true);
+    }
+  }, []);
+
+  const toggleCollapse = () => {
+    const nextState = !isCollapsed;
+    setIsCollapsed(nextState);
+    localStorage.setItem("sidebar-collapsed", String(nextState));
+  };
 
   // Close mobile sidebar automatically on screen resize to desktop
   useEffect(() => {
@@ -72,101 +88,140 @@ export default function Sidebar() {
       {/* 3. Main Sidebar Container */}
       <aside
         className={`
-          fixed top-0 bottom-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-4 text-slate-300 transition-transform duration-300 ease-in-out
+          fixed top-0 bottom-0 left-0 z-50 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-4 text-slate-300 transition-all duration-300 ease-in-out
           lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-auto
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          ${isCollapsed ? "w-64 lg:w-20" : "w-64"}
         `}
       >
-        <div>
-          {/* Mobile Close Button inside Drawer Header */}
-          <div className="flex items-center justify-between lg:hidden mb-4 pb-2 border-b border-slate-800">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Navigation Menu</span>
+        <div className="flex flex-col h-full justify-between">
+          <div>
+            {/* Mobile Close Button inside Drawer Header */}
+            <div className="flex items-center justify-between lg:hidden mb-4 pb-2 border-b border-slate-800">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Navigation Menu</span>
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Brand Card Header */}
+            <div className={`bg-slate-800/80 border border-slate-700/60 rounded-xl mb-6 shadow-xs transition-all duration-300 ${isCollapsed ? "p-2 flex justify-center" : "p-3.5"}`}>
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-tr from-indigo-600 to-violet-500 text-white p-2 rounded-lg shadow-md shadow-indigo-500/20 flex-shrink-0">
+                  <Zap className="w-5 h-5 fill-current" />
+                </div>
+                {!isCollapsed && (
+                  <div className="transition-opacity duration-300">
+                    <h2 className="font-bold text-slate-100 text-sm xl:text-base leading-tight">Zara AI</h2>
+                    <p className="text-[10px] text-slate-400">Digital Employee v1.0</p>
+                  </div>
+                )}
+              </div>
+              {!isCollapsed && (
+                <div className="mt-3 inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs px-2.5 py-1 rounded-full font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  System Active
+                </div>
+              )}
+            </div>
+
+            {/* Navigation Links */}
+            <div className="space-y-6">
+              <div>
+                {!isCollapsed ? (
+                  <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase px-3 mb-2 transition-opacity duration-300">
+                    Main Menu
+                  </p>
+                ) : (
+                  <div className="border-b border-slate-850 my-4" />
+                )}
+                <nav className="space-y-1">
+                  {mainNav.map((item) => {
+                    const isActive = pathname === item.href;
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={handleNavClick}
+                        title={isCollapsed ? item.name : undefined}
+                        className={`flex items-center rounded-lg text-sm font-medium transition-all ${
+                          isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+                        } ${
+                          isActive
+                            ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30 font-semibold"
+                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 flex-shrink-0" />
+                        {!isCollapsed && <span>{item.name}</span>}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              <div>
+                {!isCollapsed ? (
+                  <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase px-3 mb-2 transition-opacity duration-300">
+                    Audit & Analytics
+                  </p>
+                ) : (
+                  <div className="border-b border-slate-850 my-4" />
+                )}
+                <nav className="space-y-1">
+                  {auditNav.map((item) => {
+                    const isActive = pathname === item.href;
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={handleNavClick}
+                        title={isCollapsed ? item.name : undefined}
+                        className={`flex items-center rounded-lg text-sm font-medium transition-all ${
+                          isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+                        } ${
+                          isActive
+                            ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30 font-semibold"
+                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 flex-shrink-0" />
+                        {!isCollapsed && <span>{item.name}</span>}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {/* Footer info */}
+            <div className={`bg-slate-800/40 border border-slate-800/80 rounded-lg text-slate-500 text-center transition-all duration-300 ${isCollapsed ? "p-1.5 text-[9px]" : "p-3 text-xs"}`}>
+              {isCollapsed ? "Zara" : "Built with CrewAI & Next.js"}
+            </div>
+
+            {/* Collapse toggle button (visible on desktop only) */}
             <button
-              onClick={() => setMobileOpen(false)}
-              className="p-1.5 text-slate-400 hover:text-white"
+              onClick={toggleCollapse}
+              className="hidden lg:flex items-center justify-center w-full py-2.5 rounded-lg bg-slate-800/45 border border-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:outline-none cursor-pointer"
+              title={isCollapsed ? "Expand Menu" : "Collapse Menu"}
             >
-              <X className="w-5 h-5" />
+              {isCollapsed ? (
+                <ChevronRight className="w-4.5 h-4.5 text-indigo-400" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <ChevronLeft className="w-4 h-4" />
+                  <span className="text-xs font-semibold">Collapse Menu</span>
+                </div>
+              )}
             </button>
           </div>
-
-          {/* Brand Card Header */}
-          <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3.5 mb-6 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-tr from-indigo-600 to-violet-500 text-white p-2 rounded-lg shadow-md shadow-indigo-500/20">
-                <Zap className="w-5 h-5 fill-current" />
-              </div>
-              <div>
-                <h2 className="font-bold text-slate-100 text-base leading-tight">Zara AI</h2>
-                <p className="text-xs text-slate-400">Digital Employee v1.0</p>
-              </div>
-            </div>
-            <div className="mt-3 inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs px-2.5 py-1 rounded-full font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              System Active
-            </div>
-          </div>
-
-          {/* Navigation Links */}
-          <div className="space-y-6">
-            <div>
-              <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase px-3 mb-2">
-                Main Menu
-              </p>
-              <nav className="space-y-1">
-                {mainNav.map((item) => {
-                  const isActive = pathname === item.href;
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={handleNavClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                        isActive
-                          ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30 font-semibold"
-                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-
-            <div>
-              <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase px-3 mb-2">
-                Audit & Analytics
-              </p>
-              <nav className="space-y-1">
-                {auditNav.map((item) => {
-                  const isActive = pathname === item.href;
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={handleNavClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                        isActive
-                          ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30 font-semibold"
-                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer info */}
-        <div className="bg-slate-800/40 border border-slate-800 rounded-lg p-3 text-xs text-slate-500 text-center mt-6">
-          Built with CrewAI & Next.js
         </div>
       </aside>
     </>

@@ -1,96 +1,75 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { MetricsInfo } from "@/components/dashboard/MetricsInfo";
-import { CampaignControl } from "@/components/dashboard/CampaignControl";
-import { TerminalLogs } from "@/components/dashboard/TerminalLogs";
-import { LeadsLedgerTable } from "@/components/dashboard/LeadsLedgerTable";
-import { CampaignBusinesses } from "@/components/dashboard/CampaignBusinesses";
+import { BusinessTable } from "@/components/businesses/BusinessTable";
 import { api } from "@/lib/api";
-import type { Lead } from "@/lib/types";
-
-function bandToStatus(band: string | null): string {
-  if (band === "hot") return "Hot Lead";
-  if (band === "warm") return "Warm";
-  if (band === "cold") return "Cold";
-  return "Scored";
-}
+import { sampleBusinesses } from "@/lib/mockData";
+import type { Lead, Campaign } from "@/lib/types";
 
 export default function HomePage() {
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [launchedCampaignId, setLaunchedCampaignId] = useState<number | null>(null);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
   const loadLeads = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
       const data = await api.getLeads();
       setLeads(data.leads);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load leads");
-    } finally {
-      setLoading(false);
+      console.error("Failed to load leads", e);
+    }
+  }, []);
+
+  const loadCampaigns = useCallback(async () => {
+    try {
+      const data = await api.listCampaigns();
+      setCampaigns(data);
+    } catch (e) {
+      console.error("Failed to load campaigns", e);
     }
   }, []);
 
   useEffect(() => {
     loadLeads();
-  }, [loadLeads]);
-
-  const tableLeads = leads.map((l) => ({
-    name: l.name,
-    city: l.city,
-    category: l.category,
-    status: bandToStatus(l.band),
-    score: l.score,
-  }));
+    loadCampaigns();
+  }, [loadLeads, loadCampaigns]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Zara Workspace Overview</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Autonomous cold outreach SDR pipeline powered by CrewAI &amp; Gemini.
-        </p>
+      {/* Page Header with redirection action */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Zara Workspace Overview</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Autonomous cold outreach SDR pipeline powered by CrewAI &amp; Gemini.
+          </p>
+        </div>
+        <Link
+          href="/presence_analysis"
+          className="inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4.5 py-2.5 rounded-xl shadow-md shadow-indigo-600/10 hover:shadow-lg hover:shadow-indigo-600/20 transition-all gap-2 duration-300"
+        >
+          Start Campaign
+        </Link>
       </div>
 
-      <MetricsInfo />
+      {/* Dynamic Key Performance Indicators */}
+      <MetricsInfo leads={leads} campaigns={campaigns} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-5 space-y-6">
-          <CampaignControl
-            onLaunched={(id) => {
-              setLaunchedCampaignId(id);
-              loadLeads();
-            }}
-          />
-          <TerminalLogs />
+      {/* Read-Only Lead ledger showing business data */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between pl-1">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Lead Registry</h2>
+            <p className="text-xs text-slate-500">Read-only sync of target leads log</p>
+          </div>
         </div>
-
-        <div className="lg:col-span-7">
-          {launchedCampaignId ? (
-            <CampaignBusinesses campaignId={launchedCampaignId} />
-          ) : error ? (
-            <div className="bg-white border border-red-200 rounded-2xl p-5 text-sm text-red-600">
-              Could not reach the API: {error}
-              <p className="text-xs text-slate-400 mt-1">
-                Is the backend running on {process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}?
-              </p>
-            </div>
-          ) : loading ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 text-sm text-slate-400">
-              Loading leads…
-            </div>
-          ) : tableLeads.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 text-sm text-slate-500">
-              No scored leads yet. Upload a CSV and run a campaign, then recalculate scores.
-            </div>
-          ) : (
-            <LeadsLedgerTable leads={tableLeads} />
-          )}
-        </div>
+        
+        <BusinessTable
+          businesses={sampleBusinesses}
+          selectedBizId={null}
+          setSelectedBizId={() => {}}
+        />
       </div>
     </div>
   );

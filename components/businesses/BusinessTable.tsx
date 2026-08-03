@@ -6,7 +6,7 @@ export function BusinessTable({
   setSelectedBizId,
 }: {
   businesses: any[];
-  selectedBizId: number;
+  selectedBizId: number | null;
   setSelectedBizId: (id: number) => void;
 }) {
   return (
